@@ -373,7 +373,6 @@ function renderList(){
 }
 function renderEdit(){
   const r=mgr.recs[cur]; if(!r)return;
-  if(!r.first.evaluator) r.first.evaluator=mgr.evaluator||"";
   $("mEdit").innerHTML=`
   <div class="card">
     <h2>${esc(r.name)} <span class="note">${esc(r.dept)}</span></h2>
@@ -391,7 +390,6 @@ function renderEdit(){
     <h2>一次考課者評価コメント</h2>
     <label class="f">勤務実績・態度・職務遂行能力</label><textarea id="cWork">${esc(r.first.commentWork)}</textarea>
     <label class="f" style="margin-top:8px">人物・適正・伸張性</label><textarea id="cPerson">${esc(r.first.commentPerson)}</textarea>
-    <div class="grid2" style="margin-top:8px"><div><label class="f">一次考課者名（印刷に記載）</label><input type="text" id="cEval" value="${esc(r.first.evaluator)}"></div></div>
     <p class="note">※ 印刷用紙に収まるよう、各コメントは200字程度までを目安にしてください。</p>
     <div class="btns">
       <button class="btn primary" id="mPrint">この人を印刷</button>
@@ -405,7 +403,6 @@ function renderEdit(){
   $("mForm").onchange=e=>{r.form=e.target.value;touch();renderList()};
   $("cWork").oninput=e=>{r.first.commentWork=e.target.value;touch()};
   $("cPerson").oninput=e=>{r.first.commentPerson=e.target.value;touch()};
-  $("cEval").oninput=e=>{r.first.evaluator=mgr.evaluator=e.target.value;touch()};
   $("mPrint").onclick=()=>printRecs([r]);
   $("mSaveOne").onclick=()=>download(`考課_${safeName(r.name)}_一次済.json`,JSON.stringify(r,null,1));
   $("mDel").onclick=()=>{ if(confirm(`${r.name} さんを一覧から削除します。よろしいですか？`)){mgr.recs.splice(cur,1);cur=-1;saveMgr();renderList();$("mEdit").innerHTML=""} };
@@ -450,8 +447,7 @@ function sheetHTML(r){
       <div class="box" style="height:15mm;flex:none;overflow:hidden"><div class="h">勉強会への出席状況（自己評価）</div><div class="v">${esc(r.self.study)}</div></div>
       <div class="box c1"><div class="h">＜一次考課者評価コメント＞</div>
         <div class="sub">勤務実績・態度・職務遂行能力</div><div class="v">${esc(r.first.commentWork)}</div>
-        <div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div>
-        <div style="margin-top:auto;text-align:right">一次考課者：${esc(r.first.evaluator)||"　　　　　　　"}</div></div>
+        <div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div></div>
       <div class="box c2"><div class="h" style="text-align:center">＜二次考課者総評＞</div></div>
       <table class="pct">
         <tr><td>自己評価</td><td>一次考課</td><td>二次考課</td></tr>
