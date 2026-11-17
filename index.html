@@ -100,6 +100,7 @@ table.k tr.sum td{height:8mm;font-weight:700;text-align:center;font-size:11pt}
 .box.c1{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .box.c1 .h{text-align:center}
 .box.c1 .sub{font-weight:700;margin-top:1mm}
+.box.c1 .half{flex:1 1 0;min-height:0;overflow:hidden}
 .box.c2{height:24mm;flex:none}
 table.pct{width:100%;border-collapse:collapse;font-size:8.5pt;text-align:center}
 table.pct td{border:1px solid #000;height:6mm;padding:0 1mm}
@@ -474,8 +475,8 @@ function sheetHTML(r){
       <div class="box" style="height:15mm;flex:none;overflow:hidden"><div class="h">委員会への出席状況（自己評価）</div><div class="v">${esc(r.self.committee)}</div></div>
       <div class="box" style="height:15mm;flex:none;overflow:hidden"><div class="h">勉強会への出席状況（自己評価）</div><div class="v">${esc(r.self.study)}</div></div>
       <div class="box c1"><div class="h">＜一次考課者評価コメント＞</div>
-        <div class="sub">勤務実績・態度・職務遂行能力</div><div class="v">${esc(r.first.commentWork)}</div>
-        <div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div></div>
+        <div class="half"><div class="sub">勤務実績・態度・職務遂行能力</div><div class="v">${esc(r.first.commentWork)}</div></div>
+        <div class="half"><div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div></div></div>
       <div class="box c2"><div class="h" style="text-align:center">＜二次考課者総評＞</div></div>
       <table class="pct">
         <tr><td>自己評価</td><td>一次考課</td><td>二次考課</td></tr>
@@ -489,7 +490,7 @@ function sheetHTML(r){
 }
 function fitComments(){
   // コメントが欄からはみ出す場合、文字を小さくして収める
-  document.querySelectorAll("#print .box").forEach(box=>{
+  document.querySelectorAll("#print .box:not(.c1), #print .half").forEach(box=>{
     const vs=[...box.querySelectorAll(".v")]; if(!vs.length) return;
     let pt=8.5;
     while(pt>5.5 && box.scrollHeight>box.clientHeight+1){ pt-=0.25; vs.forEach(v=>v.style.fontSize=pt+"pt"); }
