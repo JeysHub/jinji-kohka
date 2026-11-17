@@ -138,7 +138,14 @@ table.pct tr:first-child td{font-weight:700}
     </div>
     <div class="card">
       <h2>4. 提出</h2>
-      <p class="note" style="margin-top:0">「提出ファイルを作成」を押すとファイルが保存されます。そのファイルを担当者に送ってください（共有フォルダ・メール添付など、法人のルールに従ってください）。入力内容はこの端末にも一時保存されます。</p>
+      <div id="sendBox" hidden style="margin-bottom:12px">
+        <p class="note" style="margin-top:0">入力が終わったら、合言葉を入れて「担当者へ送信」を押してください。担当者のメールに直接届きます。</p>
+        <div class="grid2"><div><label class="f">合言葉</label><input type="text" id="sPass" autocomplete="off" placeholder="職場で案内された合言葉"></div></div>
+        <div class="btns" style="margin-top:10px"><button class="btn primary" id="sSend">担当者へ送信</button></div>
+        <p class="note" id="sSendMsg"></p>
+        <p class="note">うまく送れない場合は、下の「提出ファイルを作成」でファイルを保存し、担当者に送ってください。</p>
+      </div>
+      <p class="note" style="margin-top:0" id="fileNote">「提出ファイルを作成」を押すとファイルが保存されます。そのファイルを担当者に送ってください（共有フォルダ・メール添付など、法人のルールに従ってください）。入力内容はこの端末にも一時保存されます。</p>
       <div class="btns">
         <button class="btn primary" id="sSubmit">提出ファイルを作成</button>
         <button class="btn" id="sShare" hidden>共有（アプリで送る）</button>
@@ -197,6 +204,8 @@ const ITEMS = [
 const N = ITEMS.filter(i=>i.k).length; // 15
 const MAX = N*5; // 75
 const FORMAT = "jinji-kohka-3";
+// 送信先：Google Apps Script のウェブアプリURL（gas/Code.gs を参照）。空なら送信ボタンは表示しない。
+const SUBMIT_URL = "";
 const LS_STAFF = "jk3.staff", LS_MGR = "jk3.mgr";
 
 const $ = id => document.getElementById(id);
@@ -273,6 +282,23 @@ function saveStaff(){ls.set(LS_STAFF,staff)}
 [["sName","name"],["sDept","dept"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{staff[k]=e.target.value;saveStaff()}));
 $("sCommittee").addEventListener("input",e=>{staff.self.committee=e.target.value;saveStaff()});
 $("sStudy").addEventListener("input",e=>{staff.self.study=e.target.value;saveStaff()});
+if(SUBMIT_URL){
+  $("sendBox").hidden=false; $("sSubmit").classList.remove("primary");
+  try{$("sPass").value=localStorage.getItem("jk3.pass")||""}catch(e){}
+  $("sSend").onclick=async()=>{
+    if(!staffCheck())return;
+    const pass=$("sPass").value.trim(); if(!pass){toast("合言葉を入力してください");$("sPass").focus();return}
+    const btn=$("sSend"),msg=$("sSendMsg"); btn.disabled=true; msg.textContent="送信中…";
+    try{
+      const res=await fetch(SUBMIT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({passcode:pass,rec:staff})});
+      const j=await res.json();
+      if(j.ok){ try{localStorage.setItem("jk3.pass",pass)}catch(e){}
+        msg.textContent=`送信しました（${new Date().toLocaleString("ja-JP")}）。修正したい場合は、直してもう一度送信してください。`; toast("送信しました"); }
+      else msg.textContent = j.error==="passcode" ? "合言葉が違います。" : "送信できませんでした："+(j.error||"");
+    }catch(e){ msg.textContent="送信できませんでした。電波の良い場所で再度お試しください。"; }
+    btn.disabled=false;
+  };
+}
 function staffCheck(){
   if(!staff.name.trim()){toast("氏名を入力してください");$("sName").focus();return false}
   const miss=filled(staff.self.scores);
