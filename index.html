@@ -119,6 +119,13 @@ table.pct tr:first-child td{font-weight:700}
 <main>
   <!-- ===== スタッフ画面 ===== -->
   <section id="staffView">
+    <div class="card" id="dlBanner" hidden style="border-color:var(--accent);background:#ddf4ff"></div>
+    <div class="card" id="closedCard" hidden style="border-color:var(--warn);background:#fff1f0;text-align:center;padding:28px 16px">
+      <h2 style="color:var(--warn);font-size:18px">受付は終了しました</h2>
+      <p style="margin:0" id="closedMsg"></p>
+      <p class="note">提出が必要な場合は、担当者へ直接ご相談ください。</p>
+    </div>
+    <div id="staffBody">
     <div class="card">
       <h2>1. 基本情報</h2>
       <div class="grid2">
@@ -155,6 +162,7 @@ table.pct tr:first-child td{font-weight:700}
         <button class="btn" id="sLoad">以前のファイルを開く</button>
         <button class="btn danger" id="sClear">入力をクリア</button>
       </div>
+    </div>
     </div>
   </section>
 
@@ -285,7 +293,24 @@ function saveStaff(){ls.set(LS_STAFF,staff)}
 [["sName","name"],["sDept","dept"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{staff[k]=e.target.value;saveStaff()}));
 $("sCommittee").addEventListener("input",e=>{staff.self.committee=e.target.value;saveStaff()});
 $("sStudy").addEventListener("input",e=>{staff.self.study=e.target.value;saveStaff()});
+function fmtDL(d){const o={};new Intl.DateTimeFormat("ja-JP",{timeZone:"Asia/Tokyo",month:"numeric",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d).forEach(x=>o[x.type]=x.value);return `${o.month}月${o.day}日（${o.weekday}）${o.hour}:${o.minute}`}
+function showClosed(dl){
+  $("staffBody").hidden=true; $("dlBanner").hidden=true; $("closedCard").hidden=false;
+  $("closedMsg").textContent = dl ? `提出期限（${fmtDL(dl)}）を過ぎたため、入力・送信はできません。` : "入力・送信はできません。";
+}
+async function checkDeadline(){
+  // 期限は送信用スクリプト側（gas/Code.gs の DEADLINE）で管理。取得できない場合は通常どおり使える
+  try{
+    const j=await (await fetch(SUBMIT_URL,{cache:"no-store"})).json();
+    if(!j.deadline) return;
+    const dl=new Date(j.deadline); if(isNaN(dl)) return;
+    if(j.closed || Date.now()>dl.getTime()) return showClosed(dl);
+    $("dlBanner").hidden=false; $("dlBanner").innerHTML=`<b>提出期限：${fmtDL(dl)}</b><span class="note">　期限を過ぎると入力・送信できなくなります。</span>`;
+    setTimeout(()=>showClosed(dl), Math.min(dl.getTime()-Date.now()+1000, 2**31-1));
+  }catch(e){}
+}
 if(SUBMIT_URL){
+  checkDeadline();
   $("sendBox").hidden=false; $("sSubmit").classList.remove("primary");
   try{$("sPass").value=localStorage.getItem("jk3.pass")||""}catch(e){}
   $("sSend").onclick=async()=>{
@@ -297,7 +322,7 @@ if(SUBMIT_URL){
       const j=await res.json();
       if(j.ok){ try{localStorage.setItem("jk3.pass",pass)}catch(e){}
         msg.textContent=`送信しました（${new Date().toLocaleString("ja-JP")}）。修正したい場合は、直してもう一度送信してください。`; toast("送信しました"); }
-      else msg.textContent = j.error==="passcode" ? "合言葉が違います。" : "送信できませんでした："+(j.error||"");
+      else msg.textContent = j.error==="passcode" ? "合言葉が違います。" : j.error==="closed" ? (showClosed(), "受付期間が終了しています。") : "送信できませんでした："+(j.error||"");
     }catch(e){ msg.textContent="送信できませんでした。電波の良い場所で再度お試しください。"; }
     btn.disabled=false;
   };

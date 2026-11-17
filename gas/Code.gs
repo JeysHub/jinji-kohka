@@ -2,13 +2,22 @@
  * 人事考課表：スタッフの自己評価を受け取り、担当者のメールへ送るスクリプト
  * （Google Apps Script。あなたのGoogleアカウントで動きます）
  *
- * ▼ 最初に下の2つだけ書き換えてください
+ * ▼ 下の3つを書き換えてください（書き換えたら「デプロイを管理」→ 新バージョンで再デプロイ）
  */
 const TO = 'ここに送信先メールアドレス';   // 例：リハ室のメールアドレス（複数ならカンマ区切り）
 const PASSCODE = 'ここに合言葉';           // スタッフに口頭や紙で伝える合言葉
+const DEADLINE = '2026-11-20T23:59:59+09:00'; // 提出期限（日本時間）。過ぎると受付を停止。期限なしにするなら '' にする
+
+function isClosed() { return DEADLINE && new Date() > new Date(DEADLINE); }
+
+// 入力ページが開かれたときに、提出期限と受付状況を返す
+function doGet() {
+  return out({ deadline: DEADLINE, closed: !!isClosed() });
+}
 
 function doPost(e) {
   try {
+    if (isClosed()) return out({ ok: false, error: 'closed' });
     const req = JSON.parse(e.postData.contents);
     if (String(req.passcode || '').trim() !== PASSCODE) return out({ ok: false, error: 'passcode' });
     const r = req.rec;
