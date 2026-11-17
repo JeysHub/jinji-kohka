@@ -66,21 +66,22 @@ textarea{min-height:70px;resize:vertical}
 
 /* ===== 印刷用（A4横） ===== */
 #print{display:none}
-@page{size:A4 landscape;margin:8mm}
+@page{size:A4 landscape;margin:10mm}
 @media print{
   body{background:#fff}
   header.app,main,.toast{display:none!important}
+  html,body{margin:0!important;padding:0!important;height:auto!important}
   #print{display:block}
 }
-.sheet{width:281mm;height:193mm;page-break-after:always;break-after:page;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","MS Gothic",sans-serif;color:#000;position:relative;overflow:hidden}
-.sheet:last-child{page-break-after:auto;break-after:auto}
+.sheet{width:100%;max-width:277mm;height:178mm;margin:0 auto;display:flex;flex-direction:column;page-break-inside:avoid;break-inside:avoid;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","MS Gothic",sans-serif;color:#000;position:relative;overflow:hidden}
+.sheet+.sheet{page-break-before:always;break-before:page}
 .sheet .ttl{text-align:center;font-size:16pt;font-weight:700;margin:0 0 1mm}
 .sheet .hd{display:flex;justify-content:space-between;align-items:flex-end;font-size:10.5pt;margin-bottom:1.5mm}
 .sheet .hd .nm{font-size:12pt;font-weight:700}
 .sheet .hd .nm u{text-decoration:none;border-bottom:1px solid #000;padding:0 6mm 0 2mm;font-size:14pt}
-.sheet .body{display:grid;grid-template-columns:1fr 64mm;gap:3mm}
+.sheet .body{display:grid;grid-template-columns:1fr 64mm;gap:3mm;flex:1;min-height:0;align-items:start}
 table.k{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt}
-table.k th,table.k td{border:1px solid #000;padding:0 1.5mm;height:9.4mm;vertical-align:middle}
+table.k th,table.k td{border:1px solid #000;padding:0 1.5mm;height:8.8mm;vertical-align:middle}
 table.k thead th{height:7mm;font-size:10pt;font-weight:700;text-align:center}
 table.k td.el{font-weight:700;text-align:center;font-size:10.5pt}
 table.k td.ds{font-size:8pt;line-height:1.25}
@@ -89,19 +90,20 @@ table.k tr.sec td{height:6mm;font-weight:700;font-size:10.5pt;text-align:left}
 table.k tr.sum td{height:8mm;font-weight:700;text-align:center;font-size:11pt}
 .n{display:inline-block;width:5.4mm;height:5.4mm;line-height:5mm;text-align:center;border:1.2px solid transparent;border-radius:50%}
 .n.on{border-color:#000;font-weight:700}
-.side{display:flex;flex-direction:column;gap:2mm;font-size:9pt}
+.side{display:flex;flex-direction:column;gap:2mm;font-size:9pt;height:100%;min-height:0;overflow:hidden}
 .box{border:1px solid #000;padding:1mm 2mm}
 .box .h{font-weight:700;font-size:10pt}
-.box.std div{font-size:10pt;line-height:1.3}
-.box .v{white-space:pre-wrap;font-size:8.5pt;line-height:1.3}
-.box.c1{flex:1;display:flex;flex-direction:column}
+.box.std div{font-size:9pt;line-height:1.35}
+.box.std .g{display:grid;grid-template-columns:1fr 1fr}
+.box .v{white-space:pre-wrap;font-size:8.5pt;line-height:1.3;overflow-wrap:anywhere}
+.box.c1{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .box.c1 .h{text-align:center}
 .box.c1 .sub{font-weight:700;margin-top:1mm}
-.box.c2{height:28mm}
+.box.c2{height:24mm;flex:none}
 table.pct{width:100%;border-collapse:collapse;font-size:8.5pt;text-align:center}
 table.pct td{border:1px solid #000;height:6mm;padding:0 1mm}
 table.pct tr:first-child td{font-weight:700}
-.sheet .foot{position:absolute;right:0;bottom:0;font-size:7.5pt;color:#444}
+.sheet .foot{flex:none;text-align:right;font-size:7pt;color:#444;margin-top:1mm}
 </style>
 </head>
 <body>
@@ -443,9 +445,9 @@ function sheetHTML(r){
       <tr class="sum"><td colspan="2">合計点数（75点満点・平均点45点）</td><td>${st}</td><td>${ft}</td><td></td></tr></tbody>
     </table>
     <div class="side">
-      <div class="box std"><div class="h" style="text-align:center">評価点基準</div><div>5・抜群<br>4・上回る<br>3・標準<br>2・下回る<br>1・支障あり</div></div>
-      <div class="box" style="min-height:15mm"><div class="h">委員会への出席状況（自己評価）</div><div class="v">${esc(r.self.committee)}</div></div>
-      <div class="box" style="min-height:15mm"><div class="h">勉強会への出席状況（自己評価）</div><div class="v">${esc(r.self.study)}</div></div>
+      <div class="box std"><div class="h" style="text-align:center">評価点基準</div><div class="g"><span>5・抜群</span><span>4・上回る</span><span>3・標準</span><span>2・下回る</span><span>1・支障あり</span></div></div>
+      <div class="box" style="height:15mm;flex:none;overflow:hidden"><div class="h">委員会への出席状況（自己評価）</div><div class="v">${esc(r.self.committee)}</div></div>
+      <div class="box" style="height:15mm;flex:none;overflow:hidden"><div class="h">勉強会への出席状況（自己評価）</div><div class="v">${esc(r.self.study)}</div></div>
       <div class="box c1"><div class="h">＜一次考課者評価コメント＞</div>
         <div class="sub">勤務実績・態度・職務遂行能力</div><div class="v">${esc(r.first.commentWork)}</div>
         <div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div>
@@ -461,7 +463,21 @@ function sheetHTML(r){
   <div class="foot">自己評価提出：${r.self.submittedAt?r.self.submittedAt.slice(0,10):"—"}　印刷：${today()}</div>
   </div>`;
 }
-function printRecs(list){ $("print").innerHTML=list.map(sheetHTML).join(""); setTimeout(()=>window.print(),50); }
+function fitComments(){
+  // コメントが欄からはみ出す場合、文字を小さくして収める
+  document.querySelectorAll("#print .box").forEach(box=>{
+    const vs=[...box.querySelectorAll(".v")]; if(!vs.length) return;
+    let pt=8.5;
+    while(pt>5.5 && box.scrollHeight>box.clientHeight+1){ pt-=0.25; vs.forEach(v=>v.style.fontSize=pt+"pt"); }
+  });
+}
+function printRecs(list){
+  const pr=$("print"); pr.innerHTML=list.map(sheetHTML).join("");
+  pr.style.cssText="display:block;position:absolute;left:-10000px;top:0;width:277mm";
+  fitComments();
+  pr.style.cssText="";
+  setTimeout(()=>window.print(),50);
+}
 
 /* ---------- タブ ---------- */
 function setTab(t){
