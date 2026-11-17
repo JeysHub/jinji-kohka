@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人事考課表 入力</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --ink:#1f2328; --sub:#5b6470; --line:#d0d7de;
+  --accent:#1f6feb; --accent-ink:#fff; --self:#0e7a4f; --first:#1f6feb; --warn:#b42318;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;font-size:15px;line-height:1.5}
+header.app{background:#24292f;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.app h1{font-size:17px;margin:0;font-weight:600}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tabs button{background:transparent;color:#fff;border:1px solid #57606a;border-radius:6px;padding:6px 12px;font-size:14px;cursor:pointer}
+.tabs button.on{background:#fff;color:#24292f;border-color:#fff;font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 10px}
+.note{color:var(--sub);font-size:13px}
+label.f{display:block;font-size:13px;color:var(--sub);margin-bottom:2px}
+input[type=text],textarea,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:6px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{color:var(--warn)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.items .sec{font-weight:700;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
+.item{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:8px 0;border-bottom:1px solid #eaeef2}
+.item .t b{font-size:15px}
+.item .t div{font-size:12.5px;color:var(--sub)}
+.item .rows{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.seg{display:inline-flex;gap:4px;align-items:center}
+.seg .who{font-size:11px;width:30px;text-align:right;color:var(--sub)}
+.seg button{width:38px;height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;font:inherit;font-weight:600;cursor:pointer;color:var(--ink)}
+.seg.self button.on{background:var(--self);border-color:var(--self);color:#fff}
+.seg.first button.on{background:var(--first);border-color:var(--first);color:#fff}
+.seg.ro button{cursor:default}
+.seg.ro button:not(.on){opacity:.35}
+.total{display:flex;gap:18px;flex-wrap:wrap;font-weight:600;margin-top:10px}
+.total span{background:#f0f3f6;border-radius:6px;padding:6px 10px}
+.mgr{display:grid;grid-template-columns:240px 1fr;gap:14px;align-items:start}
+.list{position:sticky;top:10px}
+.list ul{list-style:none;margin:8px 0 0;padding:0;max-height:60vh;overflow:auto}
+.list li{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.list li:hover{background:#f0f3f6}
+.list li.on{background:#ddf4ff}
+.badge{font-size:11px;border-radius:10px;padding:1px 7px;background:#eaeef2;color:var(--sub);white-space:nowrap}
+.badge.done{background:#dafbe1;color:#116329}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:12px;text-align:center;color:var(--sub);font-size:13px}
+.drop.over{border-color:var(--accent);background:#ddf4ff}
+.legend{font-size:12px;color:var(--sub)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 3px 0 8px;vertical-align:-1px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#24292f;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+@media (max-width:760px){
+  .mgr{grid-template-columns:1fr}
+  .list{position:static}
+  .item{grid-template-columns:1fr}
+  .item .rows{align-items:flex-start}
+  .tabs{margin-left:0}
+}
+
+/* ===== 印刷用（A4横） ===== */
+#print{display:none}
+@page{size:A4 landscape;margin:8mm}
+@media print{
+  body{background:#fff}
+  header.app,main,.toast{display:none!important}
+  #print{display:block}
+}
+.sheet{width:281mm;height:193mm;page-break-after:always;break-after:page;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","MS Gothic",sans-serif;color:#000;position:relative;overflow:hidden}
+.sheet:last-child{page-break-after:auto;break-after:auto}
+.sheet .ttl{text-align:center;font-size:16pt;font-weight:700;margin:0 0 1mm}
+.sheet .hd{display:flex;justify-content:space-between;align-items:flex-end;font-size:10.5pt;margin-bottom:1.5mm}
+.sheet .hd .nm{font-size:12pt;font-weight:700}
+.sheet .hd .nm u{text-decoration:none;border-bottom:1px solid #000;padding:0 6mm 0 2mm;font-size:14pt}
+.sheet .body{display:grid;grid-template-columns:1fr 64mm;gap:3mm}
+table.k{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt}
+table.k th,table.k td{border:1px solid #000;padding:0 1.5mm;height:9.4mm;vertical-align:middle}
+table.k thead th{height:7mm;font-size:10pt;font-weight:700;text-align:center}
+table.k td.el{font-weight:700;text-align:center;font-size:10.5pt}
+table.k td.ds{font-size:8pt;line-height:1.25}
+table.k td.sc{text-align:center;font-size:11pt;white-space:nowrap;letter-spacing:.2mm}
+table.k tr.sec td{height:6mm;font-weight:700;font-size:10.5pt;text-align:left}
+table.k tr.sum td{height:8mm;font-weight:700;text-align:center;font-size:11pt}
+.n{display:inline-block;width:5.4mm;height:5.4mm;line-height:5mm;text-align:center;border:1.2px solid transparent;border-radius:50%}
+.n.on{border-color:#000;font-weight:700}
+.side{display:flex;flex-direction:column;gap:2mm;font-size:9pt}
+.box{border:1px solid #000;padding:1mm 2mm}
+.box .h{font-weight:700;font-size:10pt}
+.box.std div{font-size:10pt;line-height:1.3}
+.box .v{white-space:pre-wrap;font-size:8.5pt;line-height:1.3}
+.box.c1{flex:1;display:flex;flex-direction:column}
+.box.c1 .h{text-align:center}
+.box.c1 .sub{font-weight:700;margin-top:1mm}
+.box.c2{height:28mm}
+table.pct{width:100%;border-collapse:collapse;font-size:8.5pt;text-align:center}
+table.pct td{border:1px solid #000;height:6mm;padding:0 1mm}
+table.pct tr:first-child td{font-weight:700}
+.sheet .foot{position:absolute;right:0;bottom:0;font-size:7.5pt;color:#444}
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>人事考課表 入力</h1>
+  <div class="tabs">
+    <button id="tabStaff" class="on">スタッフ（自己評価）</button>
+    <button id="tabMgr">一次考課者</button>
+  </div>
+</header>
+
+<main>
+  <!-- ===== スタッフ画面 ===== -->
+  <section id="staffView">
+    <div class="card">
+      <h2>1. 基本情報</h2>
+      <div class="grid2">
+        <div><label class="f">氏名（被考課者名）</label><input type="text" id="sName" placeholder="例：山田 花子"></div>
+        <div><label class="f">所属・部署</label><input type="text" id="sDept" placeholder="例：2F 介護"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>2. 自己評価</h2>
+      <div class="note">5・抜群　4・上回る　3・標準　2・下回る　1・支障あり</div>
+      <div class="items" id="sItems"></div>
+      <div class="total" id="sTotal"></div>
+    </div>
+    <div class="card">
+      <h2>3. 出席状況（自己評価）</h2>
+      <div class="grid2">
+        <div><label class="f">委員会への出席状況</label><textarea id="sCommittee" placeholder="例：感染対策委員会 12回中11回出席"></textarea></div>
+        <div><label class="f">勉強会への出席状況</label><textarea id="sStudy" placeholder="例：法人内研修 6回中6回出席"></textarea></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>4. 提出</h2>
+      <p class="note" style="margin-top:0">「提出ファイルを作成」を押すとファイルが保存されます。そのファイルを担当者に送ってください（共有フォルダ・メール添付など、法人のルールに従ってください）。入力内容はこの端末にも一時保存されます。</p>
+      <div class="btns">
+        <button class="btn primary" id="sSubmit">提出ファイルを作成</button>
+        <button class="btn" id="sShare" hidden>共有（アプリで送る）</button>
+        <button class="btn" id="sLoad">以前のファイルを開く</button>
+        <button class="btn danger" id="sClear">入力をクリア</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 一次考課者画面 ===== -->
+  <section id="mgrView" hidden>
+    <div class="mgr">
+      <div class="card list">
+        <h2>スタッフ一覧</h2>
+        <div class="drop" id="drop">提出ファイルをここにドロップ<br>または<br><button class="btn" id="mLoad" style="margin-top:6px">ファイルを選択（複数可）</button></div>
+        <ul id="mList"></ul>
+        <div class="btns" style="margin-top:10px">
+          <button class="btn" id="mPrintAll">全員分を印刷</button>
+          <button class="btn" id="mBackup">全員分を保存</button>
+          <button class="btn" id="mCsv">集計CSV</button>
+          <button class="btn danger" id="mClearAll">一覧を空にする</button>
+        </div>
+      </div>
+      <div id="mEdit">
+        <div class="card"><p class="note" style="margin:0">左の一覧にスタッフの提出ファイルを読み込み、名前を選ぶと一次考課を入力できます。<br>途中経過はこの端末のブラウザに自動保存されますが、ブラウザの履歴削除で消えるため、区切りごとに「全員分を保存」でバックアップしてください。</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="print"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" multiple hidden>
+
+<script>
+"use strict";
+const ITEMS = [
+  {sec:"勤務実績及び態度"},
+  {k:"確度", d:"仕事の処理過程及び結果の正確さの程度"},
+  {k:"速度", d:"定められた時間内に、能率的に仕事を遂行した程度"},
+  {k:"補佐", d:"上長への的確な意見具申・報告、適切な代行が行われた程度"},
+  {k:"教育", d:"部下を育成するため、適切な教育を行い、向上させた程度"},
+  {k:"協調性", d:"上長の指示に従い、同僚と協力して、仕事を円滑に遂行した程度"},
+  {k:"責任感", d:"与えられた仕事に責任を持ち、信頼して仕事を任せられた程度"},
+  {k:"積極性", d:"進んで仕事に取組み、自己啓発に努める意欲を示した程度"},
+  {k:"折衝力", d:"職務上、ご利用者様家族または外部と折衝し、その意図を達成した程度"},
+  {k:"服務規律", d:"規則や命令を守り、表裏なく節度をもって仕事に取り組んだ程度"},
+  {sec:"職務遂行能力"},
+  {k:"職務知識", d:"業務遂行上必要な知識の保有度及びその応用能力"},
+  {k:"指導力", d:"部下の教育ポイントを適確に捉え、適切に指導し向上させる能力"},
+  {k:"統率力", d:"部下を正しく扱い、個々の能力を意欲的に発揮させ結集しうる能力"},
+  {k:"企画力", d:"仕事の改善推進に創意を凝らし、計画性をもって効率的に遂行できる"},
+  {k:"判断力", d:"状況を正確に捉え、正しく価値判断し、適切な結論を下し得る能力"},
+  {k:"折衝力", d:"困難を排除して相手を納得させ、円滑かつ有効に交渉をまとめ得る能力"},
+];
+const N = ITEMS.filter(i=>i.k).length; // 15
+const MAX = N*5; // 75
+const FORMAT = "jinji-kohka-3";
+const LS_STAFF = "jk3.staff", LS_MGR = "jk3.mgr";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),2200)}
+const sum = a => a.reduce((s,v)=>s+(v||0),0);
+const filled = a => a.filter(v=>v).length;
+const pct = a => filled(a)===N ? (Math.round(sum(a)/MAX*1000)/10).toFixed(1) : "";
+const blankScores = () => Array(N).fill(0);
+const today = () => new Date().toISOString().slice(0,10);
+function emptyRec(){return {format:FORMAT,name:"",dept:"",form:"III",self:{scores:blankScores(),committee:"",study:"",submittedAt:""},first:{scores:blankScores(),commentWork:"",commentPerson:"",evaluator:"",updatedAt:""}}}
+function normalize(r){
+  const e=emptyRec();
+  if(!r||r.format!==FORMAT) return null;
+  return {...e,...r,self:{...e.self,...(r.self||{})},first:{...e.first,...(r.first||{})}};
+}
+function download(name,text,type="application/json"){
+  const b=new Blob([text],{type});const a=document.createElement("a");
+  a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+const safeName = s => (s||"未入力").replace(/[\\/:*?"<>|\s]+/g,"");
+
+/* ---------- 点数ボタン ---------- */
+function segHTML(cls,idx,val,ro){
+  let h=`<span class="seg ${cls}${ro?" ro":""}" data-i="${idx}"><span class="who">${cls==="self"?"自己":"一次"}</span>`;
+  for(let n=5;n>=1;n--) h+=`<button type="button" data-n="${n}" class="${val===n?"on":""}" ${ro?"tabindex=-1":""}>${n}</button>`;
+  return h+"</span>";
+}
+function itemsHTML(rec,mode){
+  let h="",i=0;
+  for(const it of ITEMS){
+    if(it.sec){h+=`<div class="sec">${it.sec}</div>`;continue}
+    const rows = mode==="staff"
+      ? segHTML("self",i,rec.self.scores[i],false)
+      : segHTML("self",i,rec.self.scores[i],true)+segHTML("first",i,rec.first.scores[i],false);
+    h+=`<div class="item"><div class="t"><b>${it.k}</b><div>${it.d}</div></div><div class="rows">${rows}</div></div>`;
+    i++;
+  }
+  return h;
+}
+function bindSeg(root,rec,onChange){
+  root.querySelectorAll(".seg:not(.ro)").forEach(seg=>{
+    seg.addEventListener("click",e=>{
+      const b=e.target.closest("button");if(!b)return;
+      const i=+seg.dataset.i,n=+b.dataset.n,key=seg.classList.contains("self")?"self":"first";
+      rec[key].scores[i] = rec[key].scores[i]===n?0:n;
+      seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.n===rec[key].scores[i]));
+      onChange();
+    });
+  });
+}
+function totalHTML(rec,mode){
+  const s=rec.self.scores,f=rec.first.scores;
+  let h=`<span>自己評価：${sum(s)} / ${MAX}点（${filled(s)}/${N}項目）${pct(s)?` → ${pct(s)}%`:""}</span>`;
+  if(mode==="mgr") h+=`<span>一次考課：${sum(f)} / ${MAX}点（${filled(f)}/${N}項目）${pct(f)?` → ${pct(f)}%`:""}</span>`;
+  return h+`<span style="font-weight:400" class="note">平均点 45点（60%）</span>`;
+}
+
+/* ---------- スタッフ画面 ---------- */
+let staff = normalize(ls.get(LS_STAFF,null)) || emptyRec();
+function renderStaff(){
+  $("sName").value=staff.name;$("sDept").value=staff.dept;
+  $("sCommittee").value=staff.self.committee;$("sStudy").value=staff.self.study;
+  $("sItems").innerHTML=itemsHTML(staff,"staff");
+  bindSeg($("sItems"),staff,()=>{saveStaff();$("sTotal").innerHTML=totalHTML(staff,"staff")});
+  $("sTotal").innerHTML=totalHTML(staff,"staff");
+}
+function saveStaff(){ls.set(LS_STAFF,staff)}
+[["sName","name"],["sDept","dept"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{staff[k]=e.target.value;saveStaff()}));
+$("sCommittee").addEventListener("input",e=>{staff.self.committee=e.target.value;saveStaff()});
+$("sStudy").addEventListener("input",e=>{staff.self.study=e.target.value;saveStaff()});
+function staffCheck(){
+  if(!staff.name.trim()){toast("氏名を入力してください");$("sName").focus();return false}
+  const miss=filled(staff.self.scores);
+  if(miss<N && !confirm(`未評価の項目があります（${miss}/${N}項目入力済み）。このまま提出しますか？`)) return false;
+  staff.self.submittedAt=new Date().toISOString();saveStaff();return true;
+}
+const staffFileName = () => `考課_${safeName(staff.name)}.json`;
+$("sSubmit").onclick=()=>{ if(!staffCheck())return; download(staffFileName(),JSON.stringify(staff,null,1)); toast("ファイルを保存しました。担当者に送ってください"); };
+if(navigator.canShare && navigator.canShare({files:[new File(["x"],"t.json",{type:"application/json"})]})){
+  $("sShare").hidden=false;
+  $("sShare").onclick=async()=>{ if(!staffCheck())return;
+    const f=new File([JSON.stringify(staff,null,1)],staffFileName(),{type:"application/json"});
+    try{await navigator.share({files:[f],title:"人事考課 自己評価"})}catch(e){} };
+}
+$("sClear").onclick=()=>{ if(confirm("入力内容をすべて消去します。よろしいですか？")){staff=emptyRec();saveStaff();renderStaff()} };
+
+/* ---------- 一次考課者画面 ---------- */
+let mgr = ls.get(LS_MGR,{recs:[],evaluator:""});
+mgr.recs = (mgr.recs||[]).map(normalize).filter(Boolean);
+let cur = -1;
+const saveMgr = () => ls.set(LS_MGR,mgr);
+const keyOf = r => r.name.trim();
+function addRecords(list){
+  let add=0,upd=0;
+  for(const raw of list){
+    const r=normalize(raw); if(!r){continue}
+    const idx=mgr.recs.findIndex(x=>keyOf(x)===keyOf(r));
+    if(idx<0){mgr.recs.push(r);add++}
+    else{
+      const ex=mgr.recs[idx];
+      // 自己評価はスタッフ側の新しい提出で更新、一次評価は入力済みのものを保持
+      ex.self=r.self; ex.dept=r.dept||ex.dept;
+      if(!filled(ex.first.scores) && filled(r.first.scores)) ex.first=r.first;
+      upd++;
+    }
+  }
+  mgr.recs.sort((a,b)=>a.name.localeCompare(b.name,"ja"));
+  saveMgr();renderList();
+  toast(`読み込み：新規 ${add}件 / 更新 ${upd}件`);
+}
+async function readFiles(files){
+  const out=[];let bad=0;
+  for(const f of files){
+    try{const j=JSON.parse(await f.text()); if(Array.isArray(j.recs)) out.push(...j.recs); else out.push(j);}catch(e){bad++}
+  }
+  if(bad) alert(`${bad}件のファイルを読み込めませんでした（考課表のファイルではない可能性があります）`);
+  return out;
+}
+let fileTarget="mgr";
+$("fileIn").addEventListener("change",async e=>{
+  const list=await readFiles([...e.target.files]); e.target.value="";
+  if(fileTarget==="staff"){const r=normalize(list[0]); if(r){staff=r;saveStaff();renderStaff();toast("読み込みました")} else alert("考課表のファイルではありません");}
+  else addRecords(list);
+});
+$("mLoad").onclick=()=>{fileTarget="mgr";$("fileIn").click()};
+$("sLoad").onclick=()=>{fileTarget="staff";$("fileIn").click()};
+const drop=$("drop");
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",async e=>addRecords(await readFiles([...e.dataTransfer.files])));
+
+function status(r){
+  const f=filled(r.first.scores);
+  return f===N ? `<span class="badge done">入力済</span>` : `<span class="badge">${f}/${N}</span>`;
+}
+function renderList(){
+  $("mList").innerHTML = mgr.recs.length ? mgr.recs.map((r,i)=>`<li data-i="${i}" class="${i===cur?"on":""}"><span>${esc(r.name)}<br><span class="note">${esc(r.dept)}${r.form==="II"?"　［考課表Ⅱ］":""}</span></span>${status(r)}</li>`).join("")
+    : `<li class="note" style="cursor:default">まだ読み込まれていません</li>`;
+  $("mList").querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{cur=+li.dataset.i;renderList();renderEdit()});
+}
+function renderEdit(){
+  const r=mgr.recs[cur]; if(!r)return;
+  if(!r.first.evaluator) r.first.evaluator=mgr.evaluator||"";
+  $("mEdit").innerHTML=`
+  <div class="card">
+    <h2>${esc(r.name)} <span class="note">${esc(r.dept)}</span></h2>
+    <div style="margin:4px 0 6px"><label class="f" style="display:inline">様式：</label><select id="mForm" style="width:auto"><option value="III">人事考課表Ⅲ</option><option value="II">人事考課表Ⅱ</option></select> <span class="note">（評価項目は共通。印刷時の表題のみ変わります）</span></div>
+    <div class="note">自己評価提出日：${r.self.submittedAt?r.self.submittedAt.slice(0,10):"—"}</div>
+    <div class="legend" style="margin-top:6px">凡例<i style="background:var(--self)"></i>自己評価（変更不可）<i style="background:var(--first)"></i>一次考課（入力）</div>
+    <div class="items" id="mItems">${itemsHTML(r,"mgr")}</div>
+    <div class="total" id="mTotal">${totalHTML(r,"mgr")}</div>
+  </div>
+  <div class="card">
+    <h2>出席状況（自己評価）</h2>
+    <div class="grid2"><div><label class="f">委員会</label><div>${esc(r.self.committee)||"—"}</div></div><div><label class="f">勉強会</label><div>${esc(r.self.study)||"—"}</div></div></div>
+  </div>
+  <div class="card">
+    <h2>一次考課者評価コメント</h2>
+    <label class="f">勤務実績・態度・職務遂行能力</label><textarea id="cWork">${esc(r.first.commentWork)}</textarea>
+    <label class="f" style="margin-top:8px">人物・適正・伸張性</label><textarea id="cPerson">${esc(r.first.commentPerson)}</textarea>
+    <div class="grid2" style="margin-top:8px"><div><label class="f">一次考課者名（印刷に記載）</label><input type="text" id="cEval" value="${esc(r.first.evaluator)}"></div></div>
+    <p class="note">※ 印刷用紙に収まるよう、各コメントは200字程度までを目安にしてください。</p>
+    <div class="btns">
+      <button class="btn primary" id="mPrint">この人を印刷</button>
+      <button class="btn" id="mSaveOne">この人のファイルを保存</button>
+      <button class="btn danger" id="mDel">一覧から削除</button>
+    </div>
+  </div>`;
+  const touch=()=>{r.first.updatedAt=new Date().toISOString();saveMgr()};
+  bindSeg($("mItems"),r,()=>{touch();$("mTotal").innerHTML=totalHTML(r,"mgr");renderList()});
+  $("mForm").value=r.form||"III";
+  $("mForm").onchange=e=>{r.form=e.target.value;touch();renderList()};
+  $("cWork").oninput=e=>{r.first.commentWork=e.target.value;touch()};
+  $("cPerson").oninput=e=>{r.first.commentPerson=e.target.value;touch()};
+  $("cEval").oninput=e=>{r.first.evaluator=mgr.evaluator=e.target.value;touch()};
+  $("mPrint").onclick=()=>printRecs([r]);
+  $("mSaveOne").onclick=()=>download(`考課_${safeName(r.name)}_一次済.json`,JSON.stringify(r,null,1));
+  $("mDel").onclick=()=>{ if(confirm(`${r.name} さんを一覧から削除します。よろしいですか？`)){mgr.recs.splice(cur,1);cur=-1;saveMgr();renderList();$("mEdit").innerHTML=""} };
+}
+$("mPrintAll").onclick=()=>{ if(!mgr.recs.length)return toast("データがありません");
+  const notDone=mgr.recs.filter(r=>filled(r.first.scores)<N).length;
+  if(notDone && !confirm(`一次考課が未完了の人が ${notDone}名います。印刷しますか？`))return;
+  printRecs(mgr.recs) };
+$("mBackup").onclick=()=>{ if(!mgr.recs.length)return toast("データがありません");
+  download(`考課_全員分_${today()}.json`,JSON.stringify({format:FORMAT+"-bundle",recs:mgr.recs},null,1)); };
+$("mCsv").onclick=()=>{ if(!mgr.recs.length)return toast("データがありません");
+  const head=["氏名","所属","様式",...ITEMS.filter(i=>i.k).map((it,i)=>`自己_${i+1}${it.k}`),"自己合計","自己%",...ITEMS.filter(i=>i.k).map((it,i)=>`一次_${i+1}${it.k}`),"一次合計","一次%"];
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=mgr.recs.map(r=>[r.name,r.dept,"考課表"+(r.form||"III"),...r.self.scores.map(v=>v||""),sum(r.self.scores),pct(r.self.scores),...r.first.scores.map(v=>v||""),sum(r.first.scores),pct(r.first.scores)]);
+  download(`考課_集計_${today()}.csv`,"﻿"+[head,...rows].map(r=>r.map(q).join(",")).join("\r\n"),"text/csv");
+};
+$("mClearAll").onclick=()=>{ if(confirm("一覧のデータをすべて消去します。先に「全員分を保存」でバックアップしましたか？")){mgr.recs=[];cur=-1;saveMgr();renderList();$("mEdit").innerHTML=""} };
+
+/* ---------- 印刷 ---------- */
+function circ(v){let h="";for(let n=5;n>=1;n--){h+=`<span class="n${v===n?" on":""}">${n}</span>${n>1?"・":""}`}return h}
+function sheetHTML(r){
+  let rows="",i=0;
+  for(const it of ITEMS){
+    if(it.sec){ if(it.sec!=="勤務実績及び態度") rows+=`<tr class="sec"><td colspan="5">${it.sec}</td></tr>`; continue }
+    rows+=`<tr><td class="el">${it.k}</td><td class="ds">${it.d}</td><td class="sc">${circ(r.self.scores[i])}</td><td class="sc">${circ(r.first.scores[i])}</td><td class="sc">${circ(0)}</td></tr>`;
+    i++;
+  }
+  const s=r.self.scores,f=r.first.scores, st=filled(s)?sum(s):"", ft=filled(f)?sum(f):"";
+  return `<div class="sheet">
+  <div class="ttl">人事考課表${r.form==="II"?"Ⅱ":"Ⅲ"}</div>
+  <div class="hd"><div class="nm">被考課者名：<u>${esc(r.name)}</u>　<span style="font-weight:400;font-size:10pt">${esc(r.dept)}</span></div><div></div></div>
+  <div class="body">
+    <table class="k">
+      <colgroup><col style="width:27mm"><col style="width:50mm"><col><col><col></colgroup>
+      <thead><tr><th style="font-size:8.5pt;white-space:nowrap;padding:0">勤務実績及び態度</th><th>評定要素</th><th>自己評価</th><th>一次考課者評価</th><th>二次考課者考課</th></tr></thead>
+      <tbody>${rows}
+      <tr class="sum"><td colspan="2">合計点数（75点満点・平均点45点）</td><td>${st}</td><td>${ft}</td><td></td></tr></tbody>
+    </table>
+    <div class="side">
+      <div class="box std"><div class="h" style="text-align:center">評価点基準</div><div>5・抜群<br>4・上回る<br>3・標準<br>2・下回る<br>1・支障あり</div></div>
+      <div class="box" style="min-height:15mm"><div class="h">委員会への出席状況（自己評価）</div><div class="v">${esc(r.self.committee)}</div></div>
+      <div class="box" style="min-height:15mm"><div class="h">勉強会への出席状況（自己評価）</div><div class="v">${esc(r.self.study)}</div></div>
+      <div class="box c1"><div class="h">＜一次考課者評価コメント＞</div>
+        <div class="sub">勤務実績・態度・職務遂行能力</div><div class="v">${esc(r.first.commentWork)}</div>
+        <div class="sub">人物・適正・伸張性</div><div class="v">${esc(r.first.commentPerson)}</div>
+        <div style="margin-top:auto;text-align:right">一次考課者：${esc(r.first.evaluator)||"　　　　　　　"}</div></div>
+      <div class="box c2"><div class="h" style="text-align:center">＜二次考課者総評＞</div></div>
+      <table class="pct">
+        <tr><td>自己評価</td><td>一次考課</td><td>二次考課</td></tr>
+        <tr><td>${st}/75×100</td><td>${ft}/75×100</td><td>　/75×100</td></tr>
+        <tr><td>${pct(s)} %</td><td>${pct(f)} %</td><td>　 %</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot">自己評価提出：${r.self.submittedAt?r.self.submittedAt.slice(0,10):"—"}　印刷：${today()}</div>
+  </div>`;
+}
+function printRecs(list){ $("print").innerHTML=list.map(sheetHTML).join(""); setTimeout(()=>window.print(),50); }
+
+/* ---------- タブ ---------- */
+function setTab(t){
+  $("staffView").hidden=t!=="staff"; $("mgrView").hidden=t!=="mgr";
+  $("tabStaff").classList.toggle("on",t==="staff"); $("tabMgr").classList.toggle("on",t==="mgr");
+  if(t==="mgr") renderList();
+}
+$("tabStaff").onclick=()=>setTab("staff");
+$("tabMgr").onclick=()=>setTab("mgr");
+renderStaff();
+setTab(location.hash==="#mgr"?"mgr":"staff");
+</script>
+</body>
+</html>
