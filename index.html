@@ -454,7 +454,7 @@ function circ(v){let h="";for(let n=5;n>=1;n--){h+=`<span class="n${v===n?" on":
 function sheetHTML(r){
   let rows="",i=0;
   for(const it of ITEMS){
-    if(it.sec){ if(it.sec!=="勤務実績及び態度") rows+=`<tr class="sec"><td colspan="5">${it.sec}</td></tr>`; continue }
+    if(it.sec){ if(it.sec!=="勤務実績及び態度") rows+=`<tr class="sec"><td style="font-size:9.5pt;white-space:nowrap;padding:0;text-align:center">${it.sec}</td><td colspan="4"></td></tr>`; continue }
     rows+=`<tr><td class="el">${it.k}</td><td class="ds">${it.d}</td><td class="sc">${circ(r.self.scores[i])}</td><td class="sc">${circ(r.first.scores[i])}</td><td class="sc">${circ(0)}</td></tr>`;
     i++;
   }
